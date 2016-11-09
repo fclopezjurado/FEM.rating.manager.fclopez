@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">RatingManager</string>
+
+    <!-- String resources for "APIExample" activity -->
+    <string name="nameForButtonToGetTemporalRequestToken">Get temporal request token</string>
+    <string name="nameForButtonToValidateRequestToken">Validate request token</string>
+    <string name="nameForButtonToGetSessionID">Get session ID</string>
+    <string name="nameForButtonToGetGenres">Get genres</string>
+    <string name="nameForButtonToGetMovies">Get movies</string>
+    <string name="nameForButtonToRateMovie">Rate movie</string>
 </resources>
