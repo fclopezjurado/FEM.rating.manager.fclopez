@@ -8,4 +8,10 @@
     <string name="nameForButtonToGetGenres">Get genres</string>
     <string name="nameForButtonToGetMovies">Get movies</string>
     <string name="nameForButtonToRateMovie">Rate movie</string>
+
+    <!-- String resources for "DBManagerExample" activity -->
+    <string name="nameForButtonToGetMoviesByReleaseDate">Get movies by release date</string>
+    <string name="nameForButtonToGetRatingByMovieID">Get rating by movie id</string>
+    <string name="nameForButtonToGetAppUser">Get app user</string>
+    <string name="nameForButtonToDeleteMoviesByReleaseDate">Delete movies by release date</string>
 </resources>
