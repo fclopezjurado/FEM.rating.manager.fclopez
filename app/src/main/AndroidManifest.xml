@@ -11,7 +11,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".api.example.APIExample">
+        <activity android:name=".dbmanager.example.DBManagerExample">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
