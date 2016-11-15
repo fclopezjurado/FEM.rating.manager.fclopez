@@ -11,10 +11,10 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import es.upm.miw.ratingmanager.R;
-import es.upm.miw.ratingmanager.api.definition.CallbackWithArgument;
 import es.upm.miw.ratingmanager.api.example.User;
 import es.upm.miw.ratingmanager.api.manager.APIManager;
 import es.upm.miw.ratingmanager.api.pojos.Genres;
@@ -30,7 +30,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 public class DBManagerExample extends Activity {
-    public static final String FILTER_FOR_LOGS = "MiW16";
+    private static final String FILTER_FOR_LOGS = "MiW16";
     private static final String START_DATE_TO_FIND_FILMS = "2016-10-01";
     private static final String END_DATE_TO_FIND_FILMS = "2016-11-01";
 
@@ -49,8 +49,6 @@ public class DBManagerExample extends Activity {
             "SESSION ID HAS NOT BEEN DEFINED";
     private static final String FILM_GENRES_HAVE_NOT_BEEN_DEFINED =
             "FILM GENRES HAVE NOT BEEN DEFINED";
-    /*private static final String THERE_ARE_NOT_MOVIES_TO_RATE =
-            "THERE ARE NOT MOVIES TO RATE";*/
     private static final String MOVIES_HAS_NOT_BEEN_STORED_IN_DATABASE =
             "MOVIES HAS NOT BEEN STORED IN DATABASE";
 
@@ -118,42 +116,62 @@ public class DBManagerExample extends Activity {
 
     private void generateSessionID() {
         if (this.user.getRequestToken() == null) {
-            this.apiManager.getTemporalRequestToken(this.user.getAPIKey(),
-                    new CallbackWithArgument<SessionResponse, DBManagerExample>(this) {
+            DBManagerAsyncTask<SessionResponse> myTask = new DBManagerAsyncTask<SessionResponse>(
+                    this) {
+                @Override
+                protected void onPreExecute() {
+                }
 
-                        @Override
-                        public void onResponse(Call<SessionResponse> call,
-                                               Response<SessionResponse> response) {
-                            if (response.body() != null) {
-                                SessionResponse sessionResponse = response.body();
-                                this.getArgument().user.setRequestToken(sessionResponse.
-                                        getRequestToken());
-                                this.getArgument().validateRequestToken();
-                            } else {
-                                try {
-                                    JSONObject JSONErrorObject = new JSONObject(response.errorBody()
-                                            .string());
-                                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                            + JSONErrorObject.getString("status_message"));
-                                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                            + " (" + JSONErrorObject.getString("status_code")
-                                            + ") " + JSONErrorObject.getString(
-                                            "status_message"), Toast.LENGTH_SHORT).show();
-                                } catch (Exception e) {
-                                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST + e.getMessage());
-                                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                            + e.getMessage(), Toast.LENGTH_LONG).show();
-                                }
+                @Override
+                protected Response<SessionResponse> doInBackground(ListView... ListViews) {
+                    Response<SessionResponse> response = null;
+                    Call<SessionResponse> call = this.getDbManagerExample().apiManager.
+                            getTemporalRequestToken(this.getDbManagerExample().user.getAPIKey());
+
+                    try {
+                        response = call.execute();
+                    } catch (IOException e) {
+                        Log.i(FILTER_FOR_LOGS, e.getMessage());
+                        Toast.makeText(getApplicationContext(), e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    return response;
+                }
+
+                @Override
+                protected void onPostExecute(Response response) {
+                    if (response.isSuccessful()) {
+                        if (response.body() != null) {
+                            SessionResponse sessionResponse = (SessionResponse) response.body();
+                            this.getDbManagerExample().user.setRequestToken(sessionResponse.
+                                    getRequestToken());
+                            this.getDbManagerExample().validateRequestToken();
+                        } else {
+                            try {
+                                JSONObject JSONErrorObject = new JSONObject(response.errorBody()
+                                        .string());
+                                Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                        + JSONErrorObject.getString("status_message"));
+                                Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                        + " (" + JSONErrorObject.getString("status_code")
+                                        + ") " + JSONErrorObject.getString(
+                                        "status_message"), Toast.LENGTH_SHORT).show();
+                            } catch (Exception e) {
+                                Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST + e.getMessage());
+                                Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                        + e.getMessage(), Toast.LENGTH_LONG).show();
                             }
                         }
+                    } else {
+                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST);
+                        Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST,
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+            };
 
-                        @Override
-                        public void onFailure(Call<SessionResponse> call, Throwable t) {
-                            Log.i(FILTER_FOR_LOGS, t.getMessage());
-                            Toast.makeText(getApplicationContext(), t.getMessage(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            myTask.execute();
         } else {
             Toast.makeText(getApplicationContext(), REQUEST_TOKEN_HAS_ALREADY_BEEN_DEFINED,
                     Toast.LENGTH_SHORT).show();
@@ -163,46 +181,69 @@ public class DBManagerExample extends Activity {
     private void validateRequestToken() {
         if (this.user.getRequestToken() != null) {
             if (!this.user.isRequestTokenHasBeenValidated()) {
-                this.apiManager.validateRequestToken(this.user.getAPIKey(), this.user.getUserName(),
-                        this.user.getUserPass(), this.user.getRequestToken(),
-                        new CallbackWithArgument<SessionResponse, DBManagerExample>(this) {
+                DBManagerAsyncTask<SessionResponse> myTask = new DBManagerAsyncTask<
+                        SessionResponse>(this) {
+                    @Override
+                    protected void onPreExecute() {
+                    }
 
-                            @Override
-                            public void onResponse(Call<SessionResponse> call,
-                                                   Response<SessionResponse> response) {
-                                if (response.body() != null) {
-                                    SessionResponse sessionResponse = response.body();
+                    @Override
+                    protected Response<SessionResponse> doInBackground(ListView... ListViews) {
+                        Response<SessionResponse> response = null;
+                        Call<SessionResponse> call = this.getDbManagerExample().apiManager.
+                                validateRequestToken(this.getDbManagerExample().user.getAPIKey(),
+                                        this.getDbManagerExample().user.getUserName(),
+                                        this.getDbManagerExample().user.getUserPass(),
+                                        this.getDbManagerExample().user.getRequestToken());
 
-                                    this.getArgument().user.setRequestToken(sessionResponse.
-                                            getRequestToken());
-                                    this.getArgument().user.setRequestTokenHasBeenValidated(true);
-                                    this.getArgument().getSessionID();
-                                } else {
-                                    try {
-                                        JSONObject JSONErrorObject = new JSONObject(
-                                                response.errorBody().string());
-                                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                                + JSONErrorObject.getString("status_message"));
-                                        Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                                + " (" + JSONErrorObject.getString("status_code")
-                                                + ") " + JSONErrorObject.getString(
-                                                "status_message"), Toast.LENGTH_SHORT).show();
-                                    } catch (Exception e) {
-                                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                                + e.getMessage());
-                                        Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                                + e.getMessage(), Toast.LENGTH_LONG).show();
-                                    }
+                        try {
+                            response = call.execute();
+                        } catch (IOException e) {
+                            Log.i(FILTER_FOR_LOGS, e.getMessage());
+                            Toast.makeText(getApplicationContext(), e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
+                        return response;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Response response) {
+                        if (response.isSuccessful()) {
+                            if (response.body() != null) {
+                                SessionResponse sessionResponse = (SessionResponse) response.body();
+
+                                this.getDbManagerExample().user.setRequestToken(sessionResponse.
+                                        getRequestToken());
+                                this.getDbManagerExample().user.setRequestTokenHasBeenValidated(
+                                        true);
+                                this.getDbManagerExample().getSessionID();
+                            } else {
+                                try {
+                                    JSONObject JSONErrorObject = new JSONObject(
+                                            response.errorBody().string());
+                                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                            + JSONErrorObject.getString("status_message"));
+                                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                            + " (" + JSONErrorObject.getString("status_code")
+                                            + ") " + JSONErrorObject.getString(
+                                            "status_message"), Toast.LENGTH_SHORT).show();
+                                } catch (Exception e) {
+                                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                            + e.getMessage());
+                                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                            + e.getMessage(), Toast.LENGTH_LONG).show();
                                 }
                             }
+                        } else {
+                            Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST);
+                            Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                };
 
-                            @Override
-                            public void onFailure(Call<SessionResponse> call, Throwable t) {
-                                Log.i(FILTER_FOR_LOGS, t.getMessage());
-                                Toast.makeText(getApplicationContext(), t.getMessage(),
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                myTask.execute();
             } else {
                 Toast.makeText(getApplicationContext(), REQUEST_TOKEN_HAS_ALREADY_BEEN_VALIDATED,
                         Toast.LENGTH_SHORT).show();
@@ -217,47 +258,69 @@ public class DBManagerExample extends Activity {
         if (this.user.getRequestToken() != null) {
             if (this.user.isRequestTokenHasBeenValidated()) {
                 if ((this.user.getSessionID() == null)) {
-                    this.apiManager.getSessionID(this.user.getAPIKey(), this.user.getRequestToken(),
-                            new CallbackWithArgument<SessionResponse, DBManagerExample>(this) {
+                    DBManagerAsyncTask<SessionResponse> myTask = new DBManagerAsyncTask<
+                            SessionResponse>(this) {
+                        @Override
+                        protected void onPreExecute() {
+                        }
 
-                                @Override
-                                public void onResponse(Call<SessionResponse> call,
-                                                       Response<SessionResponse> response) {
-                                    if (response.body() != null) {
-                                        SessionResponse sessionResponse = response.body();
+                        @Override
+                        protected Response<SessionResponse> doInBackground(ListView... ListViews) {
+                            Response<SessionResponse> response = null;
+                            Call<SessionResponse> call = this.getDbManagerExample().apiManager.
+                                    getSessionID(this.getDbManagerExample().user.getAPIKey(),
+                                            this.getDbManagerExample().user.getRequestToken());
 
-                                        this.getArgument().user.setSessionID(sessionResponse.
-                                                getSessionID());
-                                    } else {
-                                        try {
-                                            JSONObject JSONErrorObject = new JSONObject(
-                                                    response.errorBody().string());
-                                            Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                                    + JSONErrorObject.getString("status_message"));
-                                            Toast.makeText(getApplicationContext(),
-                                                    UNSUCCESSFUL_REQUEST + " ("
-                                                            + JSONErrorObject.getString(
-                                                            "status_code")
-                                                            + ") " + JSONErrorObject.getString(
-                                                            "status_message"),
-                                                    Toast.LENGTH_SHORT).show();
-                                        } catch (Exception e) {
-                                            Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                                    + e.getMessage());
-                                            Toast.makeText(getApplicationContext(),
-                                                    UNSUCCESSFUL_REQUEST + e.getMessage(),
-                                                    Toast.LENGTH_LONG).show();
-                                        }
+                            try {
+                                response = call.execute();
+                            } catch (IOException e) {
+                                Log.i(FILTER_FOR_LOGS, e.getMessage());
+                                Toast.makeText(getApplicationContext(), e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+
+                            return response;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Response response) {
+                            if (response.isSuccessful()) {
+                                if (response.body() != null) {
+                                    SessionResponse sessionResponse = (SessionResponse)
+                                            response.body();
+
+                                    this.getDbManagerExample().user.setSessionID(sessionResponse.
+                                            getSessionID());
+                                } else {
+                                    try {
+                                        JSONObject JSONErrorObject = new JSONObject(
+                                                response.errorBody().string());
+                                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                                + JSONErrorObject.getString("status_message"));
+                                        Toast.makeText(getApplicationContext(),
+                                                UNSUCCESSFUL_REQUEST + " ("
+                                                        + JSONErrorObject.getString(
+                                                        "status_code")
+                                                        + ") " + JSONErrorObject.getString(
+                                                        "status_message"),
+                                                Toast.LENGTH_SHORT).show();
+                                    } catch (Exception e) {
+                                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                                + e.getMessage());
+                                        Toast.makeText(getApplicationContext(),
+                                                UNSUCCESSFUL_REQUEST + e.getMessage(),
+                                                Toast.LENGTH_LONG).show();
                                     }
                                 }
+                            } else {
+                                Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST);
+                                Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST,
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    };
 
-                                @Override
-                                public void onFailure(Call<SessionResponse> call, Throwable t) {
-                                    Log.i(FILTER_FOR_LOGS, t.getMessage());
-                                    Toast.makeText(getApplicationContext(), t.getMessage(),
-                                            Toast.LENGTH_SHORT).show();
-                                }
-                            });
+                    myTask.execute();
                 } else {
                     Toast.makeText(getApplicationContext(), SESSION_ID_HAS_ALREADY_BEEN_DEFINED,
                             Toast.LENGTH_SHORT).show();
@@ -273,79 +336,119 @@ public class DBManagerExample extends Activity {
     }
 
     private void generateMovies() {
-        this.apiManager.getGenres(this.user.getAPIKey(), new CallbackWithArgument<Genres,
-                DBManagerExample>(this) {
+        DBManagerAsyncTask<Genres> myTask = new DBManagerAsyncTask<Genres>(this) {
+            @Override
+            protected void onPreExecute() {
+            }
 
             @Override
-            public void onResponse(Call<Genres> call,
-                                   Response<Genres> response) {
-                if (response.body() != null) {
-                    this.getArgument().genres = response.body();
-                    this.getArgument().getMovies();
-                } else {
-                    try {
-                        JSONObject JSONErrorObject = new JSONObject(response.errorBody()
-                                .string());
-                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                + JSONErrorObject.getString("status_message"));
-                        Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                + " (" + JSONErrorObject.getString("status_code")
-                                + ") " + JSONErrorObject.getString(
-                                "status_message"), Toast.LENGTH_SHORT).show();
-                    } catch (Exception e) {
-                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST + e.getMessage());
-                        Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                + e.getMessage(), Toast.LENGTH_LONG).show();
+            protected Response<Genres> doInBackground(ListView... ListViews) {
+                Response<Genres> response = null;
+                Call<Genres> call = this.getDbManagerExample().apiManager.
+                        getGenres(this.getDbManagerExample().user.getAPIKey());
+
+                try {
+                    response = call.execute();
+                } catch (IOException e) {
+                    Log.i(FILTER_FOR_LOGS, e.getMessage());
+                    Toast.makeText(getApplicationContext(), e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+
+                return response;
+            }
+
+            @Override
+            protected void onPostExecute(Response response) {
+                if (response.isSuccessful()) {
+                    if (response.body() != null) {
+                        this.getDbManagerExample().genres = (Genres) response.body();
+                        this.getDbManagerExample().getMovies();
+                    } else {
+                        try {
+                            JSONObject JSONErrorObject = new JSONObject(response.errorBody()
+                                    .string());
+                            Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                    + JSONErrorObject.getString("status_message"));
+                            Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                    + " (" + JSONErrorObject.getString("status_code")
+                                    + ") " + JSONErrorObject.getString(
+                                    "status_message"), Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST + e.getMessage());
+                            Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                    + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
                     }
+                } else {
+                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST);
+                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST,
+                            Toast.LENGTH_LONG).show();
                 }
             }
+        };
 
-            @Override
-            public void onFailure(Call<Genres> call, Throwable t) {
-                Log.i(FILTER_FOR_LOGS, t.getMessage());
-                Toast.makeText(getApplicationContext(), t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
+        myTask.execute();
     }
 
     private void getMovies() {
         if (this.genres.getGenres().size() > 0) {
-            this.apiManager.getMovies(this.user.getAPIKey(), 1, START_DATE_TO_FIND_FILMS,
-                    END_DATE_TO_FIND_FILMS, this.genres.getHorrorGenreID(),
-                    this.genres.genresIDsToString(false),
-                    new CallbackWithArgument<Movies, DBManagerExample>(this) {
+            DBManagerAsyncTask<Movies> myTask = new DBManagerAsyncTask<Movies>(this) {
+                @Override
+                protected void onPreExecute() {
+                }
 
-                        @Override
-                        public void onResponse(Call<Movies> call,
-                                               Response<Movies> response) {
-                            if (response.body() != null) {
-                                this.getArgument().movies = response.body();
-                            } else {
-                                try {
-                                    JSONObject JSONErrorObject = new JSONObject(response.errorBody()
-                                            .string());
-                                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
-                                            + JSONErrorObject.getString("status_message"));
-                                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                            + " (" + JSONErrorObject.getString("status_code")
-                                            + ") " + JSONErrorObject.getString(
-                                            "status_message"), Toast.LENGTH_SHORT).show();
-                                } catch (Exception e) {
-                                    Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST + e.getMessage());
-                                    Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
-                                            + e.getMessage(), Toast.LENGTH_LONG).show();
-                                }
+                @Override
+                protected Response<Movies> doInBackground(ListView... ListViews) {
+                    Response<Movies> response = null;
+                    Call<Movies> call = this.getDbManagerExample().apiManager.
+                            getMovies(this.getDbManagerExample().user.getAPIKey(), 1,
+                                    START_DATE_TO_FIND_FILMS,
+                                    END_DATE_TO_FIND_FILMS,
+                                    this.getDbManagerExample().genres.getHorrorGenreID(),
+                                    this.getDbManagerExample().genres.genresIDsToString(false));
+
+                    try {
+                        response = call.execute();
+                    } catch (IOException e) {
+                        Log.i(FILTER_FOR_LOGS, e.getMessage());
+                        Toast.makeText(getApplicationContext(), e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    return response;
+                }
+
+                @Override
+                protected void onPostExecute(Response response) {
+                    if (response.isSuccessful()) {
+                        if (response.body() != null) {
+                            this.getDbManagerExample().movies = (Movies) response.body();
+                        } else {
+                            try {
+                                JSONObject JSONErrorObject = new JSONObject(response.errorBody()
+                                        .string());
+                                Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST
+                                        + JSONErrorObject.getString("status_message"));
+                                Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                        + " (" + JSONErrorObject.getString("status_code")
+                                        + ") " + JSONErrorObject.getString(
+                                        "status_message"), Toast.LENGTH_SHORT).show();
+                            } catch (Exception e) {
+                                Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST + e.getMessage());
+                                Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST
+                                        + e.getMessage(), Toast.LENGTH_LONG).show();
                             }
                         }
+                    } else {
+                        Log.i(FILTER_FOR_LOGS, UNSUCCESSFUL_REQUEST);
+                        Toast.makeText(getApplicationContext(), UNSUCCESSFUL_REQUEST,
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+            };
 
-                        @Override
-                        public void onFailure(Call<Movies> call, Throwable t) {
-                            Log.i(FILTER_FOR_LOGS, t.getMessage());
-                            Toast.makeText(getApplicationContext(), t.getMessage(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            myTask.execute();
         } else {
             Toast.makeText(getApplicationContext(), FILM_GENRES_HAVE_NOT_BEEN_DEFINED,
                     Toast.LENGTH_SHORT).show();
@@ -357,12 +460,12 @@ public class DBManagerExample extends Activity {
             if (this.databaseStorage.count(MoviesContract.moviesTableDefinition.TABLE_NAME) == 0)
                 this.insertMoviesInDB();
 
-            ListView moviesList = (ListView)findViewById(R.id.list);
+            ListView moviesList = (ListView) findViewById(R.id.list);
             ArrayList<String> movies = new ArrayList<>();
 
-            for (es.upm.miw.ratingmanager.dbmanager.parcelables.Movie movie:
+            for (es.upm.miw.ratingmanager.dbmanager.parcelables.Movie movie :
                     this.databaseStorage.getMoviesByReleaseDate(START_DATE_TO_FIND_FILMS,
-                    END_DATE_TO_FIND_FILMS))
+                            END_DATE_TO_FIND_FILMS))
                 movies.add(movie.toString());
 
             ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
@@ -394,7 +497,7 @@ public class DBManagerExample extends Activity {
             if (this.databaseStorage.count(RatingsContract.ratingsTableDefinition.TABLE_NAME) == 0)
                 this.insertRatingInDB(movies.get(0));
 
-            ListView ratingsList = (ListView)findViewById(R.id.list);
+            ListView ratingsList = (ListView) findViewById(R.id.list);
             ArrayList<String> ratings = new ArrayList<>();
             Rating rating = this.databaseStorage.getRatingByMovieID(movies.get(0).get_movieId());
 
@@ -421,7 +524,7 @@ public class DBManagerExample extends Activity {
             if (this.databaseStorage.count(UsersContract.usersTableDefinition.TABLE_NAME) == 0)
                 this.insertAppUserInDB();
 
-            ListView usersList = (ListView)findViewById(R.id.list);
+            ListView usersList = (ListView) findViewById(R.id.list);
             ArrayList<String> users = new ArrayList<>();
             es.upm.miw.ratingmanager.dbmanager.parcelables.User user = this.databaseStorage
                     .getAppUser();
@@ -434,8 +537,7 @@ public class DBManagerExample extends Activity {
                     users);
 
             usersList.setAdapter(arrayAdapter);
-        }
-        else {
+        } else {
             Toast.makeText(getApplicationContext(), SESSION_ID_HAS_NOT_BEEN_DEFINED,
                     Toast.LENGTH_SHORT).show();
         }
@@ -450,10 +552,10 @@ public class DBManagerExample extends Activity {
         this.databaseStorage.deleteMoviesByReleaseDate(START_DATE_TO_FIND_FILMS,
                 END_DATE_TO_FIND_FILMS);
 
-        ListView moviesList = (ListView)findViewById(R.id.list);
+        ListView moviesList = (ListView) findViewById(R.id.list);
         ArrayList<String> movies = new ArrayList<>();
 
-        for (es.upm.miw.ratingmanager.dbmanager.parcelables.Movie movie:
+        for (es.upm.miw.ratingmanager.dbmanager.parcelables.Movie movie :
                 this.databaseStorage.getMoviesByReleaseDate(START_DATE_TO_FIND_FILMS,
                         END_DATE_TO_FIND_FILMS))
             movies.add(movie.toString());

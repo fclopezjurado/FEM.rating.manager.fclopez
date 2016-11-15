@@ -139,18 +139,24 @@ public class DatabaseStorage extends SQLiteOpenHelper {
         return SQLiteOpenHelper.insert(UsersContract.usersTableDefinition.TABLE_NAME, null, values);
     }
 
-    public ArrayList<Movie> getMoviesByReleaseDate(String releaseDateGreaterThanOrEqual,
-                                                   String releaseDateLessThanOrEqual) {
+    public Cursor getMoviesByReleaseDateInCursor(String releaseDateGreaterThanOrEqual,
+                                                 String releaseDateLessThanOrEqual) {
         String SQLWhereStatement = "date("
                 + MoviesContract.moviesTableDefinition.COLUMN_NAME_RELEASE_DATE
                 + ") BETWEEN date(?) AND date(?)";
-        ArrayList<Movie> movies = new ArrayList<>();
 
         SQLiteDatabase SQLiteOpenHelper = this.getReadableDatabase();
-        Cursor cursor = SQLiteOpenHelper.query(
-                MoviesContract.moviesTableDefinition.TABLE_NAME, null, SQLWhereStatement,
-                new String[]{releaseDateGreaterThanOrEqual, releaseDateLessThanOrEqual}, null,
-                null, null);
+        return SQLiteOpenHelper.query(MoviesContract.moviesTableDefinition.TABLE_NAME, null,
+                SQLWhereStatement, new String[]{releaseDateGreaterThanOrEqual,
+                        releaseDateLessThanOrEqual}, null, null, null);
+    }
+
+    public ArrayList<Movie> getMoviesByReleaseDate(String releaseDateGreaterThanOrEqual,
+                                                   String releaseDateLessThanOrEqual) {
+
+        ArrayList<Movie> movies = new ArrayList<>();
+        Cursor cursor = this.getMoviesByReleaseDateInCursor(releaseDateGreaterThanOrEqual,
+                releaseDateLessThanOrEqual);
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
@@ -183,20 +189,22 @@ public class DatabaseStorage extends SQLiteOpenHelper {
         }
 
         cursor.close();
-        SQLiteOpenHelper.close();
-
         return movies;
     }
 
-    public Rating getRatingByMovieID(int movieId) {
+    public Cursor getRatingByMovieIDInCursor(int movieId) {
+        SQLiteDatabase SQLiteOpenHelper = this.getReadableDatabase();
         String SQLWhereStatement = RatingsContract.ratingsTableDefinition.COLUMN_NAME_MOVIE_ID
                 + " = ?";
-        SQLiteDatabase SQLiteOpenHelper = this.getReadableDatabase();
-        Rating rating = null;
 
-        Cursor cursor = SQLiteOpenHelper.query(
+        return SQLiteOpenHelper.query(
                 RatingsContract.ratingsTableDefinition.TABLE_NAME, null, SQLWhereStatement,
                 new String[]{Integer.toString(movieId)}, null, null, null);
+    }
+
+    public Rating getRatingByMovieID(int movieId) {
+        Rating rating = null;
+        Cursor cursor = this.getRatingByMovieIDInCursor(movieId);
 
         if (cursor.moveToFirst()) {
             rating = new Rating(

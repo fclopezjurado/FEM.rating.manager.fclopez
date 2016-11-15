@@ -68,6 +68,6 @@ public interface TMDbAPI {
                            @Query("page") int page,
                            @Query("primary_release_date.gte") String primaryReleaseDateGTE,
                            @Query("primary_release_date.lte") String primaryReleaseDateLTE,
-                           @Query("with_genres.lte") String genresToInclude,
-                           @Query("without_genres.lte") String genresToExclude);
+                           @Query("with_genres") String genresToInclude,
+                           @Query("without_genres") String genresToExclude);
 }
