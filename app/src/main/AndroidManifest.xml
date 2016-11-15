@@ -18,6 +18,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:authorities="es.upm.miw.ratingmanager.contentprovider.provider"
+            android:name=".contentprovider.provider.ApplicationProvider"
+            android:exported="true"/>
     </application>
 
 </manifest>
