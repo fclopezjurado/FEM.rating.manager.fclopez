@@ -8,12 +8,22 @@ import android.os.Parcelable;
  */
 
 public class User implements Parcelable {
+    private static final String API_KEY = "1eaa79705818c190d2059a6b0fc02146";
+    private static final String USER_NAME = "fclopez";
+    private static final String USER_PASS = "wfJKfi7EyM";
+
     private int _id;
     private String _name;
     private String _password;
     private String _apiKey;
     private String _requestToken;
     private String _sessionId;
+
+    public User() {
+        this.set_name(USER_NAME);
+        this.set_password(USER_PASS);
+        this.set_apiKey(API_KEY);
+    }
 
     public User(int id, String name, String password, String apiKey, String requestToken,
                 String sessionId) {
